@@ -11,18 +11,20 @@ O projeto pode ser desenvolvido em equipe de até três alunos e gera três arte
   * O arquivo principal do código desenvolvido em C++;
   * Um repositório no Github, contendo o arquivo do código e um arquivo README explicando o que é o projeto e o nome dos integrantes da equipe;
   * Um seminário da apresentação e defesa do código.
+  
 O projeto envolve o desenvolvimento de um jogo em C++. O jogo deve utilizar o console para o desenvolvimento gráfico e interação com o usuário. O objetivo do jogo é desafiar o jogador a passar de três fases, onde cada um deles terão seu próprio mapa.
 
 ## JOGO:
 O jogo é do estilo aventura/puzzle onde o objetivo é o jogador conseguir passar de três fases. Em cada fase o jogador deve se movimentar para pegar uma chave para abrir a porta fechada.
+
 O jogador possui os seguintes comando:
   * W: O jogador movimenta uma unidade para cima;
   * A: O jogador movimenta uma unidade para esquerda;
   * S: O jogador movimenta uma unidade para baixo;
   * D: O jogador movimenta uma unidade para direita;
   * I: O jogador interage com o objeto que ele estar em cima.
-  
-  * O jogo possui os seguintes elementos nas fases:
+
+O jogo possui os seguintes elementos nas fases:
   * &: Simbolo que representa o jogador.
   * *: Simbolo que representa uma parede, o jogador ao se movimentar não pode passar pela parede.
   * @: Simbolo que representa a chave para abrir a porta para finalizar a fase, a porta abre no momento que o jogador interage com a chave.
@@ -53,4 +55,4 @@ O projeto terá a seguinte distribuições de pontos:
   * Entrega do código (1,5 pontos): O código deve seguir as características descritas na seção JOGO.
   * Apresentação e defesa do código (0,7 ponto): A equipe deve apresentar o jogo funcionando, as principais ideias e dificuldades durante o desenvolvimento.
   * Repositório no GitHub (0,3 ponto): Repositório no Github contendo o código principal e um README explicando o que é o projeto e seu jogo, assim como o nome dos integrantes da equipe.
-  * Acompanhamento do projeto (0,5 ponto): Terá dois dias específicos para o acompanhamento dos projeto, para esses dias os alunos devem mostrar que houve processo no desenvolvimento, será avaliado o quanto foi desenvolvido entre as semanas. Os dias do acompanhamento são 13/09 e 20/09.
+  * Acompanhamento do projeto (0,5 ponto): Terá dois dias específicos para o acompanhamento dos projeto, para esses dias os alunos devem mostrar que houve processo no desenvolvimento, será avaliado o quanto foi desenvolvido entre as semanas.
