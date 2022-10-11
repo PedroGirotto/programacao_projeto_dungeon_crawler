@@ -31,7 +31,7 @@ O jogador possui os seguintes comando:
   * O: Simbolo que representa um botão que o usuário pode interagir, o botão fica no chão e o jogador deve ficar em cima dele para poder interagir.
   * #: Simbolo que representa um espinho. A fase é reiniciada quando o jogador toca no espinho, caso a fase seja reiniciada três vezes, o jogo volta para
   o menu principal.
-  * >: Simbolo que representa um teletransporte. O teletransporte sempre deve vir em par, quando o jogador toca em um ele é transportado para o outro e vice-versa.
+  * \>: Simbolo que representa um teletransporte. O teletransporte sempre deve vir em par, quando o jogador toca em um ele é transportado para o outro e vice-versa.
   
 O jogo possui um total de 8 telas:
   * Menu Principal: Menu com com três escolhas para o usuário (Jogar, Tutorial, Sair);
