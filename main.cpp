@@ -7,6 +7,10 @@
 #include <cmath>
 using namespace std;
 
+// To do
+    // ! Refatorar os elementos do jogo para ficar dentro da estrutura Fase
+    // ! Isso inclui todas as funções e suas lógicas
+
 // Leitura imediata do input do usuário
 static struct termios old, current;
 
@@ -52,11 +56,21 @@ struct Jogador
     Coordenada posicaoJogador;
 };
 
+struct Monstro
+{
+    bool vivo;
+    Coordenada posicaoMonstro;
+};
+
 struct Fase
 {
     bool vitoria;
     char mapa[75][75];
     Coordenada posicaoInicialJogador;
+    vector<ChavePorta> chaves;
+    vector<Teletransporte> teletransportes;
+    vector<Botao> botoes;
+    vector<Monstro> monstros;
 };
 
 struct Botao
@@ -73,9 +87,12 @@ void Jogar(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Telet
 void Tutorial();
 
 // Extras
+// * EscreverMapa Refatorado!
 void EscreverMapa(Fase fase, int level);
-void ZerarFase(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransporte, vector<Botao>& botoes);
-void AdicionarChaveLista(Fase& fase, vector<ChavePorta>& chaves, int cX, int cY, int pX, int pY, bool final);
+// * ZerarFase Refatorado!
+void ZerarFase(Fase& fase, Jogador& player);
+// * AdicionarChaveLista Refatorado!
+void AdicionarChaveLista(Fase& fase, int cX, int cY, int pX, int pY, bool final);
 void AdicionarTeletransporteLista(Fase& fase, vector<Teletransporte>& tele, int iX, int iY, int fX, int fY);
 double Radianos(float grau);
 void Circulo(Fase& fase, int centroX, int centroY, int raio, char simboloDesenho);
@@ -84,6 +101,7 @@ void Circulo(Fase& fase, int centroX, int centroY, int raio, char simboloDesenho
 void Verificar(Fase& fase, Jogador& player, int x, int y);
 void Interagir(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes);
 void Mover(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes);
+void Mover(Fase& fase, Monstro& monstro);
 
 // Criar Fases e Ações
 // Fase 1
@@ -264,7 +282,7 @@ void EscreverMapa(Fase fase, int level)
     }
 }
 
-void ZerarFase(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransporte, vector<Botao>& botoes)
+void ZerarFase(Fase& fase, Jogador& player)
 {
     // Resetar matriz
     int i, j;
@@ -281,40 +299,40 @@ void ZerarFase(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<T
     player.vidas = 3;
 
     // Resetar Chaves e Portas;
-    while(chaves.size() > 0)
+    while(fase.chaves.size() > 0)
     {
-        chaves.pop_back();
+        fase.chaves.pop_back();
     }
 
     // Resetar Teletransportes
-    while(teletransporte.size() > 0)
+    while(fase.teletransportes.size() > 0)
     {
-        teletransporte.pop_back();
+        fase.teletransportes.pop_back();
     }
 
     // Resetar Botões
-    while(botoes.size() > 0)
+    while(fase.botoes.size() > 0)
     {
-        botoes.pop_back();
+        fase.botoes.pop_back();
     }
 }
 
-void AdicionarChaveLista(Fase& fase, vector<ChavePorta>& chaves, int cX, int cY, int pX, int pY, bool final)
+void AdicionarChaveLista(Fase& fase, int cX, int cY, int pX, int pY, bool final)
 {
     // Adicionar uma nova chave na lista
-    chaves.push_back(ChavePorta());
-    int tamanho = chaves.size();
+    fase.chaves.push_back(ChavePorta());
+    int tamanho = fase.chaves.size();
 
     // Configurar a chave adicionada de acordo com os argumentos passados
-    chaves[tamanho-1].ehFinal = final;
-    chaves[tamanho-1].foiAtivada = false;
+    fase.chaves[tamanho-1].ehFinal = final;
+    fase.chaves[tamanho-1].foiAtivada = false;
     
-    chaves[tamanho-1].chave.x = cX;
-    chaves[tamanho-1].chave.y = cY;
+    fase.chaves[tamanho-1].chave.x = cX;
+    fase.chaves[tamanho-1].chave.y = cY;
     fase.mapa[cY][cX] = chave;
 
-    chaves[tamanho-1].porta.x = pX;
-    chaves[tamanho-1].porta.y = pY;
+    fase.chaves[tamanho-1].porta.x = pX;
+    fase.chaves[tamanho-1].porta.y = pY;
     fase.mapa[pY][pX] = portaFecada;
 }
 
@@ -518,13 +536,12 @@ void Mover(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Telet
     }
 }
 
-
 // Funções Criar Fases ###############################################################################################
 // Fase 1
 void CriarFase1(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes)
 {
     const unsigned int terco = 25/3;
-    ZerarFase(fase, player, chaves, teletransportes, botoes);
+    ZerarFase(fase, player);
     
     // Escrever Paredes
     for(size_t i = 0; i < 25; i++)
@@ -560,10 +577,10 @@ void CriarFase1(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<
 
 
     // Escrever Chaves e portas
-    AdicionarChaveLista(fase, chaves, 24-terco/2, 24-terco/2, terco, terco/2, false);
-    AdicionarChaveLista(fase, chaves, terco/2, terco/2, terco/2, 24-terco, false);
-    AdicionarChaveLista(fase, chaves, terco/2, 24-terco/2, 24-terco, terco/2, false);
-    AdicionarChaveLista(fase, chaves, 24-terco/2, terco/2, 25/2, 24, true);
+    AdicionarChaveLista(fase, 24-terco/2, 24-terco/2, terco, terco/2, false);
+    AdicionarChaveLista(fase, terco/2, terco/2, terco/2, 24-terco, false);
+    AdicionarChaveLista(fase, terco/2, 24-terco/2, 24-terco, terco/2, false);
+    AdicionarChaveLista(fase, 24-terco/2, terco/2, 25/2, 24, true);
 
 
     // Escrever Jogador
@@ -576,7 +593,7 @@ void CriarFase1(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<
 // Fase 2
 void CriarFase2(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes)
 {
-    ZerarFase(fase, player, chaves, teletransportes, botoes);
+    ZerarFase(fase, player);
 
     const unsigned int meio = 50/2;
     const unsigned int terco = 50/3;
@@ -587,7 +604,7 @@ void CriarFase2(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<
     Circulo(fase, meio, meio, quarto, parede);
 
     // Chaves
-    AdicionarChaveLista(fase, chaves, meio, meio, 49, meio, true);
+    AdicionarChaveLista(fase, meio, meio, 49, meio, true);
 
     AdicionarBotaoLista(fase, botoes, 50-5, meio, AcaoF02B01);
     AdicionarBotaoLista(fase, botoes, meio-terco+1, meio, AcaoF02B02);
@@ -630,7 +647,7 @@ void CriarFase3(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<
     int quarto = 75/4;
     int oitavo = 75/8;
 
-    ZerarFase(fase, player, chaves, teletransportes, botoes);
+    ZerarFase(fase, player);
 
     Circulo(fase, quarto, quarto, quarto, parede);
     Circulo(fase, quarto*3, quarto, quarto, parede);
@@ -693,7 +710,7 @@ void AcaoF03B04(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<
     teletransportes.pop_back();
 
     AdicionarTeletransporteLista(fase, teletransportes, oitavo*7, quarto, meio+1, meio-1);
-    AdicionarChaveLista(fase, chaves, meio-1, meio-1, quarto*3, 71, true);
+    AdicionarChaveLista(fase, meio-1, meio-1, quarto*3, 71, true);
 }
 
 
