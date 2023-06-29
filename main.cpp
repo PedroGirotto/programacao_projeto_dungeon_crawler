@@ -5,11 +5,16 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <cmath>
+#include <random>
 using namespace std;
 
 // To do
-    // ! Refatorar os elementos do jogo para ficar dentro da estrutura Fase
-    // ! Isso inclui todas as funções e suas lógicas
+    // <> fazer: Refatorar as funções para trabalhar com menos parâmestros de entrada
+    // <> fazer: Criar o monstro
+    // fazer: Criar as inteligências dos monstros
+        // <> * Inteligencia 01: andar aleatóriamente
+        // * Inteligencia 02: seguir o jogador
+    // ! testar 
 
 // Leitura imediata do input do usuário
 static struct termios old, current;
@@ -24,9 +29,12 @@ const char portaAberta = '=';
 const char jogador = '&';
 const char teletrans = '>';
 const char botao = '0';
-
+const char monstro = 'X';
 
 // Estruturas ###################################################################
+struct Botao;
+struct Monstro;
+
 struct Coordenada
 {
     int x;
@@ -53,13 +61,7 @@ struct Jogador
     bool portaFinalAberta;
     Coordenada portaFinalPosicao;
     char simboloPosicaoAntiga;
-    Coordenada posicaoJogador;
-};
-
-struct Monstro
-{
-    bool vivo;
-    Coordenada posicaoMonstro;
+    Coordenada posicao;
 };
 
 struct Fase
@@ -73,49 +75,61 @@ struct Fase
     vector<Monstro> monstros;
 };
 
+struct Monstro
+{
+    bool vivo;
+    Coordenada posicao;
+    char simboloPosicaoAntiga;
+    void (*ia)(Fase&, Monstro&, Jogador&);
+};
+
 struct Botao
 {
     Coordenada posicao;
     bool foiAtivado;
-    void (*acao)(Fase&, Jogador&, vector<ChavePorta>&, vector<Teletransporte>&);
+    void (*acao)(Fase&, Jogador&);
 };
 
 
 // Protótipos funções ################################################################################
 // Menu Principal
-void Jogar(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransporte, vector<Botao>& botoes);
+void Jogar(Fase& fase, Jogador& player);
 void Tutorial();
 
 // Extras
-// * EscreverMapa Refatorado!
 void EscreverMapa(Fase fase, int level);
-// * ZerarFase Refatorado!
 void ZerarFase(Fase& fase, Jogador& player);
-// * AdicionarChaveLista Refatorado!
 void AdicionarChaveLista(Fase& fase, int cX, int cY, int pX, int pY, bool final);
-void AdicionarTeletransporteLista(Fase& fase, vector<Teletransporte>& tele, int iX, int iY, int fX, int fY);
+void AdicionarTeletransporteLista(Fase& fase, int iX, int iY, int fX, int fY);
+void AdicionarBotaoLista(Fase& fase, int x, int y, void (*funcao)(Fase&, Jogador&));
+void AdicionarMonstroLista(Fase& fase, int x, int y, void (*ia)(Fase&, Monstro&, Jogador&));
+void Dano(Fase& fase, Jogador& player);
+void TrocarPosicao(Fase& fase, Monstro& monster, int x, int y);
 double Radianos(float grau);
 void Circulo(Fase& fase, int centroX, int centroY, int raio, char simboloDesenho);
 
 // Movimentação
 void Verificar(Fase& fase, Jogador& player, int x, int y);
-void Interagir(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes);
-void Mover(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes);
-void Mover(Fase& fase, Monstro& monstro);
+void Verificar(Fase& fase, Jogador& monster, Jogador& player, int x, int y);
+void Interagir(Fase& fase, Jogador& player);
+void Mover(Fase& fase, Jogador& player);
+
+// Inteligencias Artificiais Monstros
+void IA01(Fase& fase, Monstro& monster, Jogador& player);
 
 // Criar Fases e Ações
 // Fase 1
-void CriarFase1(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes);
+void CriarFase1(Fase& fase, Jogador& player);
 // Fase 2
-void CriarFase2(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes);
-void AcaoF02B01(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes);
-void AcaoF02B02(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes);
+void CriarFase2(Fase& fase, Jogador& player);
+void AcaoF02B01(Fase& fase, Jogador& player);
+void AcaoF02B02(Fase& fase, Jogador& player);
 // Fase 3
-void CriarFase3(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes);
-void AcaoF03B01(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes);
-void AcaoF03B02(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes);
-void AcaoF03B03(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes);
-void AcaoF03B04(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes);
+void CriarFase3(Fase& fase, Jogador& player);
+void AcaoF03B01(Fase& fase, Jogador& player);
+void AcaoF03B02(Fase& fase, Jogador& player);
+void AcaoF03B03(Fase& fase, Jogador& player);
+void AcaoF03B04(Fase& fase, Jogador& player);
 
 // Termios
 void initTermios(int echo);
@@ -137,9 +151,6 @@ int main()
     // Declaração das variáveis;
     Fase fase;
     Jogador player;
-    vector<ChavePorta> chavesFase;
-    vector<Teletransporte> teletransFase;
-    vector<Botao> botoesFase;
     char escolha;
 
     do
@@ -154,7 +165,7 @@ int main()
         escolha = getch();
 
         if(escolha == '1')
-            Jogar(fase, player, chavesFase, teletransFase, botoesFase);
+            Jogar(fase, player);
         else if(escolha == '2')
             Tutorial();
     }
@@ -172,7 +183,7 @@ int main()
 
 // Corpo Funções ##########################################################################################
 // Menu Principal
-void Jogar(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes)
+void Jogar(Fase& fase, Jogador& player)
 {
     // Configurações iniciais
     int8_t levelAtual = 1;
@@ -184,22 +195,26 @@ void Jogar(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Telet
         // Selecionar a fase
         if(levelAtual == 1)
         {
-            CriarFase1(fase, player, chaves, teletransportes, botoes);
+            CriarFase1(fase, player);
         }
         else if(levelAtual == 2)
         {
-            CriarFase2(fase, player, chaves, teletransportes, botoes);
+            CriarFase2(fase, player);
         }
         else
         {
-            CriarFase3(fase, player, chaves, teletransportes, botoes);
+            CriarFase3(fase, player);
         }
         
         // Rodar a fase atual
         while(!fase.vitoria && player.vidas)
         {
             EscreverMapa(fase, levelAtual);
-            Mover(fase, player, chaves, teletransportes, botoes);
+            Mover(fase, player);
+            for(int i = 0; i < fase.monstros.size(); i++)
+            {
+                fase.monstros[i].ia(fase, fase.monstros[i], player);
+            }
         }
 
         // Verificar se ganhou a fase
@@ -276,7 +291,7 @@ void EscreverMapa(Fase fase, int level)
     {
         for(j = 0; j < tamanho; j++)
         {
-            cout << fase.mapa[i][j] << ' ';
+            cout << fase.mapa[i][j] << espaco;
         }
         cout << "\n";
     }
@@ -293,7 +308,7 @@ void ZerarFase(Fase& fase, Jogador& player)
     // Resetar jogador
     player.portaFinalAberta = false;
     player.portaFinalPosicao = {0, 0};
-    player.posicaoJogador = {0, 0};
+    player.posicao = {0, 0};
     player.simboloPosicaoAntiga = espaco;
     fase.vitoria = false;
     player.vidas = 3;
@@ -314,6 +329,11 @@ void ZerarFase(Fase& fase, Jogador& player)
     while(fase.botoes.size() > 0)
     {
         fase.botoes.pop_back();
+    }
+
+    while(fase.monstros.size() > 0)
+    {
+        fase.monstros.pop_back();
     }
 }
 
@@ -336,43 +356,94 @@ void AdicionarChaveLista(Fase& fase, int cX, int cY, int pX, int pY, bool final)
     fase.mapa[pY][pX] = portaFecada;
 }
 
-void AdicionarTeletransporteLista(Fase& fase, vector<Teletransporte>& tele, int iX, int iY, int fX, int fY)
+void AdicionarTeletransporteLista(Fase& fase, int iX, int iY, int fX, int fY)
 {
     int tamanho;
 
     // Adicionando novo teletransporte na lista
-    tele.push_back(Teletransporte());
-    tamanho = tele.size();
+    fase.teletransportes.push_back(Teletransporte());
+    tamanho = fase.teletransportes.size();
 
     // Adicionando o teletransporte
-    tele[tamanho-1].posicaoInicial.x = iX;
-    tele[tamanho-1].posicaoInicial.y = iY;
-    tele[tamanho-1].posicaoFinal.x = fX;
-    tele[tamanho-1].posicaoFinal.y = fY;
+    fase.teletransportes[tamanho-1].posicaoInicial.x = iX;
+    fase.teletransportes[tamanho-1].posicaoInicial.y = iY;
+    fase.teletransportes[tamanho-1].posicaoFinal.x = fX;
+    fase.teletransportes[tamanho-1].posicaoFinal.y = fY;
     fase.mapa[iY][iX] = teletrans;
 
     // Adicionando o seu par
-    tele.push_back(Teletransporte());
-    tamanho = tele.size();
-    tele[tamanho-1].posicaoInicial = tele[tamanho-2].posicaoFinal;
-    tele[tamanho-1].posicaoFinal = tele[tamanho-2].posicaoInicial;
+    fase.teletransportes.push_back(Teletransporte());
+    tamanho = fase.teletransportes.size();
+    fase.teletransportes[tamanho-1].posicaoInicial = fase.teletransportes[tamanho-2].posicaoFinal;
+    fase.teletransportes[tamanho-1].posicaoFinal = fase.teletransportes[tamanho-2].posicaoInicial;
     fase.mapa[fY][fX] = teletrans;
 }
 
-void AdicionarBotaoLista(Fase& fase, vector<Botao>& botoes, int x, int y, void (*funcao)(Fase&, Jogador&, vector<ChavePorta>&, vector<Teletransporte>&))
+void AdicionarBotaoLista(Fase& fase, int x, int y, void (*funcao)(Fase&, Jogador&))
 {
     // Adicionando novo botão na lista
-    botoes.push_back(Botao());
-    int tamanho = botoes.size();
+    fase.botoes.push_back(Botao());
+    int tamanho = fase.botoes.size();
 
     // Configurando botão de acordo com os argumentos passados
-    botoes[tamanho-1].foiAtivado = false;
+    fase.botoes[tamanho-1].foiAtivado = false;
 
-    botoes[tamanho-1].posicao.x = x;
-    botoes[tamanho-1].posicao.y = y;
+    fase.botoes[tamanho-1].posicao.x = x;
+    fase.botoes[tamanho-1].posicao.y = y;
     fase.mapa[y][x] = botao;
 
-    botoes[tamanho-1].acao = funcao;
+    fase.botoes[tamanho-1].acao = funcao;
+}
+
+void AdicionarMonstroLista(Fase& fase, int x, int y, void (*ia)(Fase&, Monstro&, Jogador&))
+{
+    // Adicionando novo monstro na lista
+    fase.monstros.push_back(Monstro());
+    int tamanho = fase.monstros.size();
+
+    // Configurando botão de acordo com os argumentos passados
+    fase.monstros[tamanho-1].vivo = true;
+    fase.monstros[tamanho-1].simboloPosicaoAntiga = espaco;
+
+    fase.monstros[tamanho-1].posicao.x = x;
+    fase.monstros[tamanho-1].posicao.y = y;
+    fase.mapa[y][x] = monstro;
+
+    fase.monstros[tamanho-1].ia = ia;
+}
+
+void Dano(Fase& fase, Jogador& player)
+{
+    // Apagar o jogador e colocar o simbolo antigo no lugar
+    fase.mapa[player.posicao.y][player.posicao.x] = player.simboloPosicaoAntiga;
+
+    // Resetar o antigo simbolo que o jogador viu
+    player.simboloPosicaoAntiga = espaco;
+
+    // Resetar a posição do jogador
+    player.posicao.x = fase.posicaoInicialJogador.x;
+    player.posicao.y = fase.posicaoInicialJogador.y;
+
+    // Desenhar o jogador no mapa
+    fase.mapa[player.posicao.y][player.posicao.x] = jogador;
+    
+    // Diminuir uma vida
+    player.vidas -= 1;
+}
+
+void TrocarPosicao(Fase& fase, Monstro& monster, int x, int y)
+{
+    // Apagar posição atual do monstro pelo simbolo original do lugar
+    fase.mapa[monster.posicao.y][monster.posicao.x] = monster.simboloPosicaoAntiga;
+
+    // Atualizar a posição do monstro
+    monster.posicao.x += x;
+    monster.posicao.y += y;
+
+    // Salvar o simbolo original da nova posição
+    monster.simboloPosicaoAntiga = fase.mapa[monster.posicao.y][monster.posicao.x];
+    // Mover o monstro
+    fase.mapa[monster.posicao.y][monster.posicao.x] = monstro;      
 }
 
 double Radianos(float grau)
@@ -392,77 +463,99 @@ void Circulo(Fase& fase, int centroX, int centroY, int raio, char simboloDesenho
 // Movimentação ########################################################################################################
 void Verificar(Fase& fase, Jogador& player, int x, int y)
 {
-    if(fase.mapa[player.posicaoJogador.y + y][player.posicaoJogador.x + x] == espaco || \
-       fase.mapa[player.posicaoJogador.y + y][player.posicaoJogador.x + x] == chave  || \
-       fase.mapa[player.posicaoJogador.y + y][player.posicaoJogador.x + x] == portaAberta || \
-       fase.mapa[player.posicaoJogador.y + y][player.posicaoJogador.x + x] == teletrans || \
-       fase.mapa[player.posicaoJogador.y + y][player.posicaoJogador.x + x] == botao)
+    if(fase.mapa[player.posicao.y + y][player.posicao.x + x] == espaco || \
+       fase.mapa[player.posicao.y + y][player.posicao.x + x] == chave  || \
+       fase.mapa[player.posicao.y + y][player.posicao.x + x] == portaAberta || \
+       fase.mapa[player.posicao.y + y][player.posicao.x + x] == teletrans || \
+       fase.mapa[player.posicao.y + y][player.posicao.x + x] == botao)
     {
         // Apagar posição atual do jogador pelo simbolo original do lugar
-        fase.mapa[player.posicaoJogador.y][player.posicaoJogador.x] = player.simboloPosicaoAntiga;
+        fase.mapa[player.posicao.y][player.posicao.x] = player.simboloPosicaoAntiga;
 
         // Atualizar a posição do jogador
-        player.posicaoJogador.x += x;
-        player.posicaoJogador.y += y;
+        player.posicao.x += x;
+        player.posicao.y += y;
 
         // Salvar o simbolo original da nova posição
-        player.simboloPosicaoAntiga = fase.mapa[player.posicaoJogador.y][player.posicaoJogador.x];
+        player.simboloPosicaoAntiga = fase.mapa[player.posicao.y][player.posicao.x];
         // Mover o jogador
-        fase.mapa[player.posicaoJogador.y][player.posicaoJogador.x] = jogador;
+        fase.mapa[player.posicao.y][player.posicao.x] = jogador;
 
         // Ativação de eventos específicos
-        if(player.portaFinalAberta && player.posicaoJogador == player.portaFinalPosicao)
+        if(player.portaFinalAberta && player.posicao == player.portaFinalPosicao)
         {
             fase.vitoria = true;
         }
         
     }
-    else if (fase.mapa[player.posicaoJogador.y + y][player.posicaoJogador.x + x] == espinho)
+    else if (fase.mapa[player.posicao.y + y][player.posicao.x + x] == espinho)
     {
-        // Apagar o jogador e colocar o simbolo antigo no lugar
-        fase.mapa[player.posicaoJogador.y][player.posicaoJogador.x] = player.simboloPosicaoAntiga;
-
-        // Resetar o antigo simbolo que o jogador viu
-        player.simboloPosicaoAntiga = ' ';
-
-        // Resetar a posição do jogador
-        player.posicaoJogador.x = fase.posicaoInicialJogador.x;
-        player.posicaoJogador.y = fase.posicaoInicialJogador.y;
-
-        // Desenhar o jogador no mapa
-        fase.mapa[player.posicaoJogador.y][player.posicaoJogador.x] = jogador;
-        
-        // Diminuir uma vida
-        player.vidas -= 1;
+        Dano(fase, player);
     }
 }
 
-void Interagir(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes) 
+void Verificar(Fase& fase, Monstro& monster, Jogador& player, int x, int y)
+{
+    if(fase.mapa[monster.posicao.y + y][monster.posicao.x + x] == espaco || \
+       fase.mapa[monster.posicao.y + y][monster.posicao.x + x] == chave  || \
+       fase.mapa[monster.posicao.y + y][monster.posicao.x + x] == portaAberta || \
+       fase.mapa[monster.posicao.y + y][monster.posicao.x + x] == teletrans || \
+       fase.mapa[monster.posicao.y + y][monster.posicao.x + x] == botao)
+    {
+        TrocarPosicao(fase, monster, x, y);  
+    }
+    else if (fase.mapa[monster.posicao.y + y][monster.posicao.x + x] == espinho)
+    {
+        // Apagar o monstro e colocar o simbolo antigo no lugar
+        fase.mapa[monster.posicao.y][monster.posicao.x] = monster.simboloPosicaoAntiga;
+        
+        // Desativa o monstro
+        monster.vivo = false;
+
+        for(size_t i = 0; i < fase.monstros.size(); i++)
+        {
+            // Verificar qual monstro morreu
+            if(!fase.monstros[i].vivo)
+            {
+                //Tirar o monstro da lista
+                fase.monstros.erase(fase.monstros.begin()+i);
+                break;
+            }
+        }
+    }
+    else if(fase.mapa[monster.posicao.y + y][monster.posicao.x + x] == jogador)
+    {
+        Dano(fase, player);
+        TrocarPosicao(fase, monster, x, y);
+    }
+}
+
+void Interagir(Fase& fase, Jogador& player) 
 {
     if(player.simboloPosicaoAntiga == chave)
     {  
         // Interagindo com uma chave, fazer a varredura para descobrir qual
-        for(size_t i = 0; i < chaves.size(); i++)
+        for(size_t i = 0; i < fase.chaves.size(); i++)
         {
             // Verificar qual chave não foi ativada e se possui a mesma coordenada do jogador
-            if(!chaves[i].foiAtivada && player.posicaoJogador == chaves[i].chave)
+            if(!fase.chaves[i].foiAtivada && player.posicao == fase.chaves[i].chave)
             {
                 // Colocar que a chave foi ativada para ignorar na busca
-                chaves[i].foiAtivada = true;
+                fase.chaves[i].foiAtivada = true;
 
                 // Apagar a chave do mapa
                 player.simboloPosicaoAntiga = espaco;
 
                 // Mudar o simbolo da porta fechada para uma porta aberta
-                fase.mapa[chaves[i].porta.y][chaves[i].porta.x] = portaAberta;
+                fase.mapa[fase.chaves[i].porta.y][fase.chaves[i].porta.x] = portaAberta;
 
                 // Ativar a flag da porta final e salvar sua coordenada
-                if(chaves[i].ehFinal)
+                if(fase.chaves[i].ehFinal)
                 {
                     player.portaFinalAberta = true;
-                    player.portaFinalPosicao = chaves[i].porta;
+                    player.portaFinalPosicao = fase.chaves[i].porta;
                 }
-                chaves.erase(chaves.begin()+i);
+                fase.chaves.erase(fase.chaves.begin()+i);
                 break;
             }
         }
@@ -470,19 +563,19 @@ void Interagir(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<T
     else if(player.simboloPosicaoAntiga == teletrans)
     {
         // Interagindo com um teletransporte, fazer a varredura para descobrir qual
-        for(size_t i = 0; i < teletransportes.size(); i++)
+        for(size_t i = 0; i < fase.teletransportes.size(); i++)
         {
             // Verificar qual possui a mesma coordenada do jogador
-            if(player.posicaoJogador == teletransportes[i].posicaoInicial)
+            if(player.posicao == fase.teletransportes[i].posicaoInicial)
             {
                 // Colocar o simbolo do teletransporte de volta no lugar
-                fase.mapa[player.posicaoJogador.y][player.posicaoJogador.x] = teletrans;
+                fase.mapa[player.posicao.y][player.posicao.x] = teletrans;
                 
                 // Atualizar a posição do jogador para o outro lado do teletransporte
-                player.posicaoJogador = teletransportes[i].posicaoFinal;
+                player.posicao = fase.teletransportes[i].posicaoFinal;
 
                 // Colocar o símbolo do jogador na nova posição
-                fase.mapa[player.posicaoJogador.y][player.posicaoJogador.x] = jogador;
+                fase.mapa[player.posicao.y][player.posicao.x] = jogador;
                 break;
             }
         }
@@ -490,22 +583,22 @@ void Interagir(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<T
     else if(player.simboloPosicaoAntiga == botao)
     {
         // Interagindo com um botão, fazer a varredura para descobrir qual
-        for(size_t i = 0; i < botoes.size(); i++)
+        for(size_t i = 0; i < fase.botoes.size(); i++)
         {
             // Verificar se o botão ainda não foi precionado e se possui a mesma posição do jogador
-            if(!botoes[i].foiAtivado && player.posicaoJogador == botoes[i].posicao)
+            if(!fase.botoes[i].foiAtivado && player.posicao == fase.botoes[i].posicao)
             {
                 // Mudar o estado para precionado
-                botoes[i].foiAtivado = true;
+                fase.botoes[i].foiAtivado = true;
                 // Chamar a função registrada na função
-                botoes[i].acao(fase, player, chaves, teletransportes);
+                fase.botoes[i].acao(fase, player);
                 break;
             }
         }
     }
 }
 
-void Mover(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes)
+void Mover(Fase& fase, Jogador& player)
 {
     char move;
     move = getch();
@@ -528,7 +621,7 @@ void Mover(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Telet
     }
     else if(move == 'i')
     {
-        Interagir(fase, player, chaves, teletransportes, botoes);
+        Interagir(fase, player);
     }
     else if(move == 'k')
     {
@@ -536,9 +629,37 @@ void Mover(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Telet
     }
 }
 
+
+// Funções Inteligencias Artificiais Monstros ###############################################################################################
+void IA01(Fase& fase, Monstro& monster, Jogador& player)
+{
+    if(monster.vivo)
+    {
+        int move = rand()%4;
+
+        if(move == 0)
+        {
+            Verificar(fase, monster, player, 0, -1);
+        }
+        else if(move == 1)
+        {
+            Verificar(fase, monster, player, -1, 0);
+        }
+        else if(move == 2)
+        {
+            Verificar(fase, monster, player, 0, 1);
+        }
+        else if(move == 3)
+        {
+            Verificar(fase, monster, player, 1, 0);
+        }
+    }
+}
+
+
 // Funções Criar Fases ###############################################################################################
 // Fase 1
-void CriarFase1(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes)
+void CriarFase1(Fase& fase, Jogador& player)
 {
     const unsigned int terco = 25/3;
     ZerarFase(fase, player);
@@ -582,16 +703,19 @@ void CriarFase1(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<
     AdicionarChaveLista(fase, terco/2, 24-terco/2, 24-terco, terco/2, false);
     AdicionarChaveLista(fase, 24-terco/2, terco/2, 25/2, 24, true);
 
+    // Escrever Monstros
+    AdicionarMonstroLista(fase, terco/2-1, terco/2-1, IA01);
+    AdicionarMonstroLista(fase, terco/2-1, 24-terco/2-1, IA01);
 
     // Escrever Jogador
     fase.posicaoInicialJogador.x = 25/2;
     fase.posicaoInicialJogador.y = 25/2;
     fase.mapa[fase.posicaoInicialJogador.y][fase.posicaoInicialJogador.x] = jogador; 
-    player.posicaoJogador = fase.posicaoInicialJogador;
+    player.posicao = fase.posicaoInicialJogador;
 }
 
 // Fase 2
-void CriarFase2(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes)
+void CriarFase2(Fase& fase, Jogador& player)
 {
     ZerarFase(fase, player);
 
@@ -606,18 +730,18 @@ void CriarFase2(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<
     // Chaves
     AdicionarChaveLista(fase, meio, meio, 49, meio, true);
 
-    AdicionarBotaoLista(fase, botoes, 50-5, meio, AcaoF02B01);
-    AdicionarBotaoLista(fase, botoes, meio-terco+1, meio, AcaoF02B02);
+    AdicionarBotaoLista(fase, 50-5, meio, AcaoF02B01);
+    AdicionarBotaoLista(fase,  meio-terco+1, meio, AcaoF02B02);
 
     // Escrever Jogador
     fase.posicaoInicialJogador.x = 48;
     fase.posicaoInicialJogador.y = meio;
     fase.mapa[fase.posicaoInicialJogador.y][fase.posicaoInicialJogador.x] = jogador; 
 
-    player.posicaoJogador = fase.posicaoInicialJogador;
+    player.posicao = fase.posicaoInicialJogador;
 }
 
-void AcaoF02B01(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes)
+void AcaoF02B01(Fase& fase, Jogador& player)
 {
     const unsigned int meio = 50/2;
     const unsigned int terco = 50/3;
@@ -627,7 +751,7 @@ void AcaoF02B01(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<
     fase.mapa[meio][meio+terco-1] = espaco;
 }
 
-void AcaoF02B02(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes)
+void AcaoF02B02(Fase& fase, Jogador& player)
 {
     const unsigned int meio = 50/2;
     const unsigned int quarto = 50/4;
@@ -641,7 +765,7 @@ void AcaoF02B02(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<
 }
 
 // Fase 3
-void CriarFase3(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes, vector<Botao>& botoes)
+void CriarFase3(Fase& fase, Jogador& player)
 {
     int meio = 75/2;
     int quarto = 75/4;
@@ -654,24 +778,24 @@ void CriarFase3(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<
     Circulo(fase, quarto, quarto*3, quarto, parede);
     Circulo(fase, quarto*3, quarto*3, quarto, parede);
 
-    AdicionarTeletransporteLista(fase, teletransportes, oitavo-1, quarto, oitavo*5-1, quarto);
-    AdicionarTeletransporteLista(fase, teletransportes, oitavo*3, quarto, oitavo*3, quarto*3);
-    AdicionarTeletransporteLista(fase, teletransportes, oitavo-1, quarto*3, oitavo*5-1, quarto*3);
-    AdicionarTeletransporteLista(fase, teletransportes, oitavo*7, quarto, oitavo*7, quarto*3);
+    AdicionarTeletransporteLista(fase, oitavo*3, quarto, oitavo*3, quarto*3);
+    AdicionarTeletransporteLista(fase, oitavo-1, quarto, oitavo*5-1, quarto);
+    AdicionarTeletransporteLista(fase, oitavo-1, quarto*3, oitavo*5-1, quarto*3);
+    AdicionarTeletransporteLista(fase, oitavo*7, quarto, oitavo*7, quarto*3);
 
-    AdicionarBotaoLista(fase, botoes, quarto, quarto, AcaoF03B01);
-    AdicionarBotaoLista(fase, botoes, quarto*3, quarto, AcaoF03B02);
-    AdicionarBotaoLista(fase, botoes, quarto, quarto*3, AcaoF03B03);
-    AdicionarBotaoLista(fase, botoes, quarto*3, quarto*3, AcaoF03B04);
+    AdicionarBotaoLista(fase, quarto, quarto, AcaoF03B01);
+    AdicionarBotaoLista(fase, quarto*3, quarto, AcaoF03B02);
+    AdicionarBotaoLista(fase, quarto, quarto*3, AcaoF03B03);
+    AdicionarBotaoLista(fase, quarto*3, quarto*3, AcaoF03B04);
 
     fase.posicaoInicialJogador.x = quarto;
     fase.posicaoInicialJogador.y = oitavo;
     fase.mapa[fase.posicaoInicialJogador.y][fase.posicaoInicialJogador.x] = jogador; 
 
-    player.posicaoJogador = fase.posicaoInicialJogador;
+    player.posicao = fase.posicaoInicialJogador;
 }
 
-void AcaoF03B01(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes)
+void AcaoF03B01(Fase& fase, Jogador& player)
 {
     int quarto = 75/4;
     int oitavo = 75/8;
@@ -680,7 +804,7 @@ void AcaoF03B01(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<
     fase.mapa[oitavo][quarto] = fase.mapa[oitavo*3-1][quarto] = espaco;
 }
 
-void AcaoF03B02(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes)
+void AcaoF03B02(Fase& fase, Jogador& player)
 {
     int quarto = 75/4;
     int oitavo = 75/8;
@@ -689,7 +813,7 @@ void AcaoF03B02(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<
     fase.mapa[oitavo][quarto*3] = fase.mapa[oitavo*3-1][quarto*3] = espaco;
 }
 
-void AcaoF03B03(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes)
+void AcaoF03B03(Fase& fase, Jogador& player)
 {
     int quarto = 75/4;
     int oitavo = 75/8;
@@ -698,7 +822,7 @@ void AcaoF03B03(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<
     fase.mapa[oitavo*5][quarto] = fase.mapa[oitavo*7-1][quarto] = espaco;
 }
 
-void AcaoF03B04(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<Teletransporte>& teletransportes)
+void AcaoF03B04(Fase& fase, Jogador& player)
 {
     int quarto = 75/4;
     int meio = 75/2;
@@ -706,10 +830,10 @@ void AcaoF03B04(Fase& fase, Jogador& player, vector<ChavePorta>& chaves, vector<
     Circulo(fase, quarto*3, quarto*3, quarto, espinho);
     Circulo(fase, quarto*3, quarto*3, oitavo, espinho);
     fase.mapa[oitavo*5][quarto*3] = fase.mapa[oitavo*7-1][quarto*3] = espaco;
-    teletransportes.pop_back();
-    teletransportes.pop_back();
+    fase.teletransportes.pop_back();
+    fase.teletransportes.pop_back();
 
-    AdicionarTeletransporteLista(fase, teletransportes, oitavo*7, quarto, meio+1, meio-1);
+    AdicionarTeletransporteLista(fase, oitavo*7, quarto, meio+1, meio-1);
     AdicionarChaveLista(fase, meio-1, meio-1, quarto*3, 71, true);
 }
 
