@@ -9,11 +9,13 @@
 using namespace std;
 
 // Todo:
-    // // fazer: Refatorar as funções para trabalhar com menos parâmestros de entrada
-    // // fazer: Criar o monstro
-    // todo: Criar as inteligências dos monstros
+    // // todo: Refatorar as funções para trabalhar com menos parâmestros de entrada
+    // // todo: Criar o monstro
+    // // todo: Criar as inteligências dos monstros
         // // * Inteligencia 01: andar aleatóriamente
         // // * Inteligencia 02: seguir o jogador 
+    // todo: criar o sistema de geração de fase fazendo o colapso de onda
+        // ! por que diabos eu vou fazer isso eu não sei mas bora
 
 // Leitura imediata do input do usuário
 static struct termios old, current;
