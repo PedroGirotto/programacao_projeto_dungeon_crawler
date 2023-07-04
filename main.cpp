@@ -8,13 +8,12 @@
 #include <random>
 using namespace std;
 
-// To do
-    // <> fazer: Refatorar as funções para trabalhar com menos parâmestros de entrada
-    // <> fazer: Criar o monstro
-    // fazer: Criar as inteligências dos monstros
-        // <> * Inteligencia 01: andar aleatóriamente
-        // * Inteligencia 02: seguir o jogador
-    // ! testar 
+// Todo:
+    // // fazer: Refatorar as funções para trabalhar com menos parâmestros de entrada
+    // // fazer: Criar o monstro
+    // todo: Criar as inteligências dos monstros
+        // // * Inteligencia 01: andar aleatóriamente
+        // // * Inteligencia 02: seguir o jogador 
 
 // Leitura imediata do input do usuário
 static struct termios old, current;
@@ -107,6 +106,7 @@ void Dano(Fase& fase, Jogador& player);
 void TrocarPosicao(Fase& fase, Monstro& monster, int x, int y);
 double Radianos(float grau);
 void Circulo(Fase& fase, int centroX, int centroY, int raio, char simboloDesenho);
+void MudarTamanhoFonte(int tamanho);
 
 // Movimentação
 void Verificar(Fase& fase, Jogador& player, int x, int y);
@@ -116,6 +116,7 @@ void Mover(Fase& fase, Jogador& player);
 
 // Inteligencias Artificiais Monstros
 void IA01(Fase& fase, Monstro& monster, Jogador& player);
+void IA02(Fase& fase, Monstro& monster, Jogador& player);
 
 // Criar Fases e Ações
 // Fase 1
@@ -152,6 +153,8 @@ int main()
     Fase fase;
     Jogador player;
     char escolha;
+
+    cout << "\e[8;5;10t";
 
     do
     {
@@ -459,6 +462,10 @@ void Circulo(Fase& fase, int centroX, int centroY, int raio, char simboloDesenho
     }
 }
 
+void MudarTamanhoFonte(int tamanho)
+{
+    
+}
 
 // Movimentação ########################################################################################################
 void Verificar(Fase& fase, Jogador& player, int x, int y)
@@ -656,6 +663,40 @@ void IA01(Fase& fase, Monstro& monster, Jogador& player)
     }
 }
 
+void IA02(Fase& fase, Monstro& monster, Jogador& player)
+{
+    int distanciaX = monster.posicao.x - player.posicao.x;
+    int distanciaY = monster.posicao.y - player.posicao.y;
+
+    // verificar qual a menor distância para o jogador
+    // se é a horizontal ou a vertical
+    if(abs(distanciaX) > abs(distanciaY))
+    {
+        // monstro esta em uma região direita do jogador, logo subir
+        if(distanciaX > 0)
+        {
+            Verificar(fase, monster, player, -1, 0);
+        }
+        // monstro esta em uma região esquerda do jogador, logo descer
+        else
+        {
+            Verificar(fase, monster, player, 1, 0);
+        }
+    }
+    else
+    {
+        // monstro esta em uma região abaixo do jogador, logo subir
+        if(distanciaY > 0)
+        {
+            Verificar(fase, monster, player, 0, -1);
+        }
+        // monstro esta em uma região acima do jogador, logo descer
+        else
+        {
+            Verificar(fase, monster, player, 0, 1);
+        }
+    }
+}
 
 // Funções Criar Fases ###############################################################################################
 // Fase 1
@@ -730,8 +771,12 @@ void CriarFase2(Fase& fase, Jogador& player)
     // Chaves
     AdicionarChaveLista(fase, meio, meio, 49, meio, true);
 
+    // Botões
     AdicionarBotaoLista(fase, 50-5, meio, AcaoF02B01);
     AdicionarBotaoLista(fase,  meio-terco+1, meio, AcaoF02B02);
+
+    // Monstros
+    AdicionarMonstroLista(fase, meio-terco-2, meio, IA01);
 
     // Escrever Jogador
     fase.posicaoInicialJogador.x = 48;
@@ -767,7 +812,6 @@ void AcaoF02B02(Fase& fase, Jogador& player)
 // Fase 3
 void CriarFase3(Fase& fase, Jogador& player)
 {
-    int meio = 75/2;
     int quarto = 75/4;
     int oitavo = 75/8;
 
@@ -787,6 +831,11 @@ void CriarFase3(Fase& fase, Jogador& player)
     AdicionarBotaoLista(fase, quarto*3, quarto, AcaoF03B02);
     AdicionarBotaoLista(fase, quarto, quarto*3, AcaoF03B03);
     AdicionarBotaoLista(fase, quarto*3, quarto*3, AcaoF03B04);
+
+    AdicionarMonstroLista(fase, quarto-1, quarto-1, IA02);
+    AdicionarMonstroLista(fase, quarto*3-1, quarto-1, IA02);
+    AdicionarMonstroLista(fase, quarto-1, quarto*3-1, IA02);
+    AdicionarMonstroLista(fase, quarto*3-1, quarto*3-1, IA02);
 
     fase.posicaoInicialJogador.x = quarto;
     fase.posicaoInicialJogador.y = oitavo;
