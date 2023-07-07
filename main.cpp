@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include <vector>
 #include <termios.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <cmath>
 #include <random>
@@ -16,6 +15,7 @@ using namespace std;
         // // * Inteligencia 02: seguir o jogador 
     // todo: criar o sistema de geração de fase fazendo o colapso de onda
         // ! por que diabos eu vou fazer isso eu não sei mas bora
+    // todo: criar o sistema do zoom do mapa para não imprimir ela inteira
 
 // Leitura imediata do input do usuário
 static struct termios old, current;
@@ -68,7 +68,8 @@ struct Jogador
 struct Fase
 {
     bool vitoria;
-    char mapa[75][75];
+    char** mapa;
+    int tamanho;
     Coordenada posicaoInicialJogador;
     vector<ChavePorta> chaves;
     vector<Teletransporte> teletransportes;
@@ -92,13 +93,14 @@ struct Botao
 };
 
 
-// Protótipos funções ################################################################################
+// Protótipo funções ################################################################################
 // Menu Principal
 void Jogar(Fase& fase, Jogador& player);
 void Tutorial();
 
 // Extras
-void EscreverMapa(Fase fase, int level);
+void AlocarMemoriaFase(Fase& fase);
+void EscreverMapa(Fase fase, Jogador player);
 void ZerarFase(Fase& fase, Jogador& player);
 void AdicionarChaveLista(Fase& fase, int cX, int cY, int pX, int pY, bool final);
 void AdicionarTeletransporteLista(Fase& fase, int iX, int iY, int fX, int fY);
@@ -108,7 +110,6 @@ void Dano(Fase& fase, Jogador& player);
 void TrocarPosicao(Fase& fase, Monstro& monster, int x, int y);
 double Radianos(float grau);
 void Circulo(Fase& fase, int centroX, int centroY, int raio, char simboloDesenho);
-void MudarTamanhoFonte(int tamanho);
 
 // Movimentação
 void Verificar(Fase& fase, Jogador& player, int x, int y);
@@ -153,16 +154,15 @@ int main()
 
     // Declaração das variáveis;
     Fase fase;
+    fase.mapa = nullptr;
     Jogador player;
     char escolha;
-
-    cout << "\e[8;5;10t";
 
     do
     {
         system("clear || cls");
         cout << "#################################################\n\n";
-        cout << "\t\tGiras Labirinto\n";
+        cout << "\t\tGira's Labirinto\n";
         cout << "\t\t\t1- Jogar\n";
         cout << "\t\t\t2- Tutorial\n";
         cout << "\t\t\t3- Sair\n";
@@ -191,8 +191,10 @@ int main()
 void Jogar(Fase& fase, Jogador& player)
 {
     // Configurações iniciais
-    int8_t levelAtual = 1;
-    player.vidas = 1;
+    char espera;
+    int levelAtual = 1;
+    player.vidas = 3; //! 1
+    fase.vitoria = false; //! apagar
 
     // Função que roda a lógica de quando selecionar jogo
     while(player.vidas > 0 && levelAtual != 4)
@@ -214,7 +216,7 @@ void Jogar(Fase& fase, Jogador& player)
         // Rodar a fase atual
         while(!fase.vitoria && player.vidas)
         {
-            EscreverMapa(fase, levelAtual);
+            EscreverMapa(fase, player);
             Mover(fase, player);
             for(int i = 0; i < fase.monstros.size(); i++)
             {
@@ -235,7 +237,6 @@ void Jogar(Fase& fase, Jogador& player)
             cout << "\t\t Você terminou o labirinto!\n \t\t Parabéns!\n\n";
             cout << "#################################################\n";
 
-            char espera;
             espera = getch();
         }
         
@@ -246,7 +247,6 @@ void Jogar(Fase& fase, Jogador& player)
             cout << "\t\t Você perdeu todas as vidas!\n \t\t Fim de Jogo!\n\n";
             cout << "#################################################\n";
 
-            char espera;
             espera = getch();
         }
     }
@@ -281,22 +281,43 @@ void Tutorial()
 }
 
 // Funções Extras ##########################################################################################
-void EscreverMapa(Fase fase, int level)
+void AlocarMemoriaFase(Fase& fase)
+{
+    int i, j;
+    
+    //fase.mapa = (char**) malloc(fase.tamanho*sizeof(char*));
+    fase.mapa = new char*[fase.tamanho];
+
+    for(i = 0; i < fase.tamanho; i++)
+    {
+        //fase.mapa[i] = (char*) malloc(fase.tamanho*sizeof(char));
+        fase.mapa[i] = new char[fase.tamanho];
+        for(j = 0; j < fase.tamanho; j++)
+        {
+            fase.mapa[i][j] = espaco;
+        }
+    }
+}
+
+void EscreverMapa(Fase fase, Jogador player)
 {
     system("clear || cls");
 
     int i, j;
 
-    // Dependendo do valor para level, a variável tamanho recebe 25, 50 ou 75
-    // if(level == 1) tamanho = 25;  if(level == 2) tamanho = 50;  if(level == 3) tamanho = 75;   
-    int tamanho = 25*(level == 1) + 50*(level == 2) + 75*(level == 3);
-
     // Loop para escrever a matriz
-    for(i = 0; i < tamanho; i++)
+    for(i = player.posicao.y-12; i < player.posicao.y+13; i++)
     {
-        for(j = 0; j < tamanho; j++)
+        for(j = player.posicao.x-12; j < player.posicao.x+13; j++)
         {
-            cout << fase.mapa[i][j] << espaco;
+            if(i >= 0 && i < fase.tamanho && j >= 0 && j < fase.tamanho)
+            {
+                cout << fase.mapa[i][j] << espaco;
+            }
+            else
+            {
+                cout << espaco;
+            }
         }
         cout << "\n";
     }
@@ -304,12 +325,17 @@ void EscreverMapa(Fase fase, int level)
 
 void ZerarFase(Fase& fase, Jogador& player)
 {
-    // Resetar matriz
+    // Desalocar memória da matriz
     int i, j;
-    for(i = 0; i < 75; i++)
-        for(j = 0; j < 75; j++)
-            fase.mapa[i][j] = espaco;
     
+    if(fase.mapa != nullptr)
+    {
+        for(i = 0; i < fase.tamanho; i++)
+            delete[] fase.mapa[i];
+        delete[] fase.mapa;
+    }
+    fase.mapa = nullptr;
+
     // Resetar jogador
     player.portaFinalAberta = false;
     player.portaFinalPosicao = {0, 0};
@@ -447,6 +473,7 @@ void TrocarPosicao(Fase& fase, Monstro& monster, int x, int y)
 
     // Salvar o simbolo original da nova posição
     monster.simboloPosicaoAntiga = fase.mapa[monster.posicao.y][monster.posicao.x];
+
     // Mover o monstro
     fase.mapa[monster.posicao.y][monster.posicao.x] = monstro;      
 }
@@ -458,15 +485,10 @@ double Radianos(float grau)
 
 void Circulo(Fase& fase, int centroX, int centroY, int raio, char simboloDesenho)
 {
-    for(size_t i = 1; i < 360; i++)
+    for(int i = 1; i < 360; i++)
     {
         fase.mapa[int(sin(Radianos(i))*raio + centroY)][int(cos(Radianos(i))*raio + centroX)] = simboloDesenho;
     }
-}
-
-void MudarTamanhoFonte(int tamanho)
-{
-    
 }
 
 // Movimentação ########################################################################################################
@@ -521,7 +543,7 @@ void Verificar(Fase& fase, Monstro& monster, Jogador& player, int x, int y)
         // Desativa o monstro
         monster.vivo = false;
 
-        for(size_t i = 0; i < fase.monstros.size(); i++)
+        for(int i = 0; i < fase.monstros.size(); i++)
         {
             // Verificar qual monstro morreu
             if(!fase.monstros[i].vivo)
@@ -544,7 +566,7 @@ void Interagir(Fase& fase, Jogador& player)
     if(player.simboloPosicaoAntiga == chave)
     {  
         // Interagindo com uma chave, fazer a varredura para descobrir qual
-        for(size_t i = 0; i < fase.chaves.size(); i++)
+        for(int i = 0; i < fase.chaves.size(); i++)
         {
             // Verificar qual chave não foi ativada e se possui a mesma coordenada do jogador
             if(!fase.chaves[i].foiAtivada && player.posicao == fase.chaves[i].chave)
@@ -572,7 +594,7 @@ void Interagir(Fase& fase, Jogador& player)
     else if(player.simboloPosicaoAntiga == teletrans)
     {
         // Interagindo com um teletransporte, fazer a varredura para descobrir qual
-        for(size_t i = 0; i < fase.teletransportes.size(); i++)
+        for(int i = 0; i < fase.teletransportes.size(); i++)
         {
             // Verificar qual possui a mesma coordenada do jogador
             if(player.posicao == fase.teletransportes[i].posicaoInicial)
@@ -592,7 +614,7 @@ void Interagir(Fase& fase, Jogador& player)
     else if(player.simboloPosicaoAntiga == botao)
     {
         // Interagindo com um botão, fazer a varredura para descobrir qual
-        for(size_t i = 0; i < fase.botoes.size(); i++)
+        for(int i = 0; i < fase.botoes.size(); i++)
         {
             // Verificar se o botão ainda não foi precionado e se possui a mesma posição do jogador
             if(!fase.botoes[i].foiAtivado && player.posicao == fase.botoes[i].posicao)
@@ -611,7 +633,7 @@ void Mover(Fase& fase, Jogador& player)
 {
     char move;
     move = getch();
-
+    
     if(move == 'w')
     {
         Verificar(fase, player, 0, -1);
@@ -700,15 +722,18 @@ void IA02(Fase& fase, Monstro& monster, Jogador& player)
     }
 }
 
+
 // Funções Criar Fases ###############################################################################################
 // Fase 1
 void CriarFase1(Fase& fase, Jogador& player)
 {
     const unsigned int terco = 25/3;
+    fase.tamanho = 25;
     ZerarFase(fase, player);
-    
+    AlocarMemoriaFase(fase);
+
     // Escrever Paredes
-    for(size_t i = 0; i < 25; i++)
+    for(int i = 0; i < 25; i++)
     {
         fase.mapa[i][0] = parede;
         fase.mapa[0][i] = parede;
@@ -716,7 +741,7 @@ void CriarFase1(Fase& fase, Jogador& player)
         fase.mapa[i][24] = parede;
     }
 
-    for(size_t  i = 0; i < terco; i++)
+    for(int  i = 0; i < terco; i++)
     {
         // Sala Esquerda Superior
         fase.mapa[i][terco] = parede;
@@ -735,10 +760,8 @@ void CriarFase1(Fase& fase, Jogador& player)
         fase.mapa[24-terco][24-i] = parede;
     }
 
-
     // Escrever Buracos
     fase.mapa[24-terco/2][24-terco] = espaco;
-
 
     // Escrever Chaves e portas
     AdicionarChaveLista(fase, 24-terco/2, 24-terco/2, terco, terco/2, false);
@@ -761,6 +784,8 @@ void CriarFase1(Fase& fase, Jogador& player)
 void CriarFase2(Fase& fase, Jogador& player)
 {
     ZerarFase(fase, player);
+    fase.tamanho = 50;
+    AlocarMemoriaFase(fase);
 
     const unsigned int meio = 50/2;
     const unsigned int terco = 50/3;
@@ -818,6 +843,8 @@ void CriarFase3(Fase& fase, Jogador& player)
     int oitavo = 75/8;
 
     ZerarFase(fase, player);
+    fase.tamanho = 75;
+    AlocarMemoriaFase(fase);
 
     Circulo(fase, quarto, quarto, quarto, parede);
     Circulo(fase, quarto*3, quarto, quarto, parede);
